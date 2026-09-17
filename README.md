@@ -27,3 +27,16 @@ Build a production-style loan management workflow covering beneficiary managemen
 - `GET /api/beneficiaries/{id}` retrieves one beneficiary
 - `PUT /api/beneficiaries/{id}` updates a beneficiary
 - `DELETE /api/beneficiaries/{id}` removes a beneficiary
+
+## Day 3 Scope
+- Add loan application CRUD API at `/api/loans` and `/api/loan-applications`
+- Validate applicant, amount, term, and purpose before accepting a loan request
+- Return consistent 400/404 responses for invalid or missing loan applications
+- Cover create, read, list, update, and delete flows with integration tests
+
+### Loan Application API
+- `POST /api/loans` and `POST /api/loan-applications` creates a loan request
+- `GET /api/loans` and `GET /api/loan-applications` lists loans
+- `GET /api/loans/{id}` and `GET /api/loan-applications/{id}` retrieves one loan
+- `PUT /api/loans/{id}` and `PUT /api/loan-applications/{id}` updates a loan
+- `DELETE /api/loans/{id}` and `DELETE /api/loan-applications/{id}` removes a loan

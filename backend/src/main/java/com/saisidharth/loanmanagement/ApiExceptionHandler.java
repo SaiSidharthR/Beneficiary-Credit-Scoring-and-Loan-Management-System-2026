@@ -8,12 +8,19 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.saisidharth.loanmanagement.beneficiary.BeneficiaryNotFoundException;
+import com.saisidharth.loanmanagement.loanapplication.LoanApplicationNotFoundException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
     @ExceptionHandler(BeneficiaryNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(BeneficiaryNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError(HttpStatus.NOT_FOUND.value(), exception.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(LoanApplicationNotFoundException.class)
+    public ResponseEntity<ApiError> handleLoanApplicationNotFound(LoanApplicationNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ApiError(HttpStatus.NOT_FOUND.value(), exception.getMessage(), Instant.now()));
     }
