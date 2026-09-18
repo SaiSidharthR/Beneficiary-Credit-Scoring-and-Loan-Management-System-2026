@@ -40,3 +40,12 @@ Build a production-style loan management workflow covering beneficiary managemen
 - `GET /api/loans/{id}` and `GET /api/loan-applications/{id}` retrieves one loan
 - `PUT /api/loans/{id}` and `PUT /api/loan-applications/{id}` updates a loan
 - `DELETE /api/loans/{id}` and `DELETE /api/loan-applications/{id}` removes a loan
+
+## Day 4 Scope
+- Calculate a beneficiary credit score from income, debt, and payment history
+- Return a 300-850 score, rating, and loan eligibility decision
+- Validate the beneficiary and credit profile before calculating a score
+- Cover successful and invalid credit scoring requests with integration tests
+
+### Credit Scoring API
+- `POST /api/beneficiaries/{id}/credit-score` calculates a beneficiary's score
