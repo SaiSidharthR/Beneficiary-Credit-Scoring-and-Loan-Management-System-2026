@@ -27,6 +27,7 @@ public class LoanApplicationService {
                 request.termMonths(),
                 request.purpose().trim(),
                 LoanApplicationStatus.PENDING,
+                null,
                 now,
                 now));
     }
@@ -49,8 +50,36 @@ public class LoanApplicationService {
                 request.termMonths(),
                 request.purpose().trim(),
                 current.status(),
+                current.reviewNotes(),
                 current.createdAt(),
                 Instant.now()));
+    }
+
+    public LoanApplication updateStatus(UUID id, LoanStatusRequest request) {
+        if (request == null || request.status() == null) {
+            throw new IllegalArgumentException("status is required");
+        }
+
+        LoanApplication current = findById(id);
+        LoanApplication updated = new LoanApplication(
+                current.id(),
+                current.beneficiaryId(),
+                current.amount(),
+                current.termMonths(),
+                current.purpose(),
+                request.status(),
+                request.reviewNotes() == null ? current.reviewNotes() : request.reviewNotes().trim(),
+                current.createdAt(),
+                Instant.now());
+
+        return repository.save(updated);
+    }
+
+    public LoanRepaymentSchedule createSchedule(UUID id) {
+        LoanApplication loan = findById(id);
+        BigDecimal principal = loan.amount();
+        BigDecimal monthlyEmi = principal.divide(BigDecimal.valueOf(loan.termMonths()), 2, java.math.RoundingMode.HALF_UP);
+        return new LoanRepaymentSchedule(loan.id(), principal, loan.termMonths(), monthlyEmi);
     }
 
     public void delete(UUID id) {

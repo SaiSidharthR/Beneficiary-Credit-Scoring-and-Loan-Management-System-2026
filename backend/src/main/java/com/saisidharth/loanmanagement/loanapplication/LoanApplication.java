@@ -11,6 +11,7 @@ public record LoanApplication(
         Integer termMonths,
         String purpose,
         LoanApplicationStatus status,
+        String reviewNotes,
         Instant createdAt,
         Instant updatedAt) {
 }

@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -69,6 +70,32 @@ class LoanApplicationControllerTest {
 
         mockMvc.perform(get("/api/loans/{id}", id))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void approvesLoanAndCalculatesRepaymentSchedule() throws Exception {
+        String response = mockMvc.perform(post("/api/loans")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":5000.00,\"termMonths\":12,\"purpose\":\"Education\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String id = response.replaceAll(".*\\\"id\\\":\\\"([^\\\"]+)\\\".*", "$1");
+
+        mockMvc.perform(patch("/api/loans/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\",\"reviewNotes\":\"Approved after verification\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+
+        mockMvc.perform(get("/api/loans/{id}/schedule", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loanId").value(id))
+                .andExpect(jsonPath("$.termMonths").value(12))
+                .andExpect(jsonPath("$.principal").value(5000.00))
+                .andExpect(jsonPath("$.monthlyEmi").isNumber());
     }
 
     @Test
