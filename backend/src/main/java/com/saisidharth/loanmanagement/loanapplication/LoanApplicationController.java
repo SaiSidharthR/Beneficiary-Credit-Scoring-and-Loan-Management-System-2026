@@ -55,6 +55,16 @@ public class LoanApplicationController {
         return service.createSchedule(id);
     }
 
+    @PostMapping({"/loans/{id}/repayments", "/loan-applications/{id}/repayments"})
+    public ResponseEntity<LoanRepayment> createRepayment(@PathVariable UUID id, @RequestBody LoanRepaymentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.createRepayment(id, request));
+    }
+
+    @GetMapping({"/loans/{id}/summary", "/loan-applications/{id}/summary"})
+    public LoanRepaymentSummary getSummary(@PathVariable UUID id) {
+        return service.findSummary(id);
+    }
+
     @DeleteMapping({"/loans/{id}", "/loan-applications/{id}"})
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         service.delete(id);

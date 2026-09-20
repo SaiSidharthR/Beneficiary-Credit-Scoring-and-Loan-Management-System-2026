@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 public class LoanApplicationService {
 
     private final LoanApplicationRepository repository;
+    private final LoanRepaymentRepository repaymentRepository;
 
-    public LoanApplicationService(LoanApplicationRepository repository) {
+    public LoanApplicationService(LoanApplicationRepository repository, LoanRepaymentRepository repaymentRepository) {
         this.repository = repository;
+        this.repaymentRepository = repaymentRepository;
     }
 
     public LoanApplication create(LoanApplicationRequest request) {
@@ -80,6 +82,32 @@ public class LoanApplicationService {
         BigDecimal principal = loan.amount();
         BigDecimal monthlyEmi = principal.divide(BigDecimal.valueOf(loan.termMonths()), 2, java.math.RoundingMode.HALF_UP);
         return new LoanRepaymentSchedule(loan.id(), principal, loan.termMonths(), monthlyEmi);
+    }
+
+    public LoanRepayment createRepayment(UUID loanId, LoanRepaymentRequest request) {
+        if (request == null || request.amount() == null || request.amount().compareTo(BigDecimal.ZERO) <= 0
+                || isBlank(request.paymentMode()) || isBlank(request.reference())) {
+            throw new IllegalArgumentException("amount, paymentMode, and reference are required");
+        }
+
+        findById(loanId);
+        Instant now = Instant.now();
+        return repaymentRepository.save(new LoanRepayment(
+                UUID.randomUUID(),
+                loanId,
+                request.amount(),
+                request.paymentMode().trim(),
+                request.reference().trim(),
+                now));
+    }
+
+    public LoanRepaymentSummary findSummary(UUID loanId) {
+        LoanApplication loan = findById(loanId);
+        BigDecimal totalPaid = repaymentRepository.findByLoanId(loanId).stream()
+                .map(LoanRepayment::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new LoanRepaymentSummary(loan.id(), totalPaid, loan.amount().subtract(totalPaid));
     }
 
     public void delete(UUID id) {

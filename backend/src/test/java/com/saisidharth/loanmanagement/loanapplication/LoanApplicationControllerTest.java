@@ -99,6 +99,36 @@ class LoanApplicationControllerTest {
     }
 
     @Test
+    void recordsRepaymentsAndReturnsLoanSummary() throws Exception {
+        String response = mockMvc.perform(post("/api/loans")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":5000.00,\"termMonths\":12,\"purpose\":\"Education\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String id = response.replaceAll(".*\\\"id\\\":\\\"([^\\\"]+)\\\".*", "$1");
+
+        mockMvc.perform(patch("/api/loans/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\",\"reviewNotes\":\"Approved\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/loans/{id}/repayments", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":1500.00,\"paymentMode\":\"BANK_TRANSFER\",\"reference\":\"REF-1001\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.amount").value(1500.00));
+
+        mockMvc.perform(get("/api/loans/{id}/summary", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loanId").value(id))
+                .andExpect(jsonPath("$.totalPaid").value(1500.00))
+                .andExpect(jsonPath("$.outstandingBalance").value(3500.00));
+    }
+
+    @Test
     void rejectsInvalidLoanApplication() throws Exception {
         mockMvc.perform(post("/api/loan-applications")
                         .contentType(MediaType.APPLICATION_JSON)
