@@ -10,8 +10,22 @@ public record LoanApplication(
         BigDecimal amount,
         Integer termMonths,
         String purpose,
+        BigDecimal annualInterestRate,
         LoanApplicationStatus status,
         String reviewNotes,
         Instant createdAt,
         Instant updatedAt) {
+
+        public LoanApplication(
+                        UUID id,
+                        UUID beneficiaryId,
+                        BigDecimal amount,
+                        Integer termMonths,
+                        String purpose,
+                        LoanApplicationStatus status,
+                        String reviewNotes,
+                        Instant createdAt,
+                        Instant updatedAt) {
+                this(id, beneficiaryId, amount, termMonths, purpose, BigDecimal.ZERO, status, reviewNotes, createdAt, updatedAt);
+        }
 }

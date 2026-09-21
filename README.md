@@ -49,3 +49,13 @@ Build a production-style loan management workflow covering beneficiary managemen
 
 ### Credit Scoring API
 - `POST /api/beneficiaries/{id}/credit-score` calculates a beneficiary's score
+
+## Day 7 Scope
+- Add annual interest rate support to loan applications
+- Calculate amortized monthly EMI from principal, rate, and term
+- Preserve zero-interest compatibility when the rate is omitted
+- Return the interest rate and calculated EMI from the repayment schedule API
+
+### EMI API
+- `POST /api/loans` and `POST /api/loan-applications` accept optional `annualInterestRate`
+- `GET /api/loans/{id}/schedule` and `GET /api/loan-applications/{id}/schedule` return the calculated `monthlyEmi`

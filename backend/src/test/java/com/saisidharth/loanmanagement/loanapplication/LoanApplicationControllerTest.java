@@ -76,7 +76,7 @@ class LoanApplicationControllerTest {
     void approvesLoanAndCalculatesRepaymentSchedule() throws Exception {
         String response = mockMvc.perform(post("/api/loans")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":5000.00,\"termMonths\":12,\"purpose\":\"Education\"}"))
+                                                .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":5000.00,\"termMonths\":12,\"purpose\":\"Education\",\"annualInterestRate\":10.0}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -95,6 +95,8 @@ class LoanApplicationControllerTest {
                 .andExpect(jsonPath("$.loanId").value(id))
                 .andExpect(jsonPath("$.termMonths").value(12))
                 .andExpect(jsonPath("$.principal").value(5000.00))
+                .andExpect(jsonPath("$.annualInterestRate").value(10.0))
+                .andExpect(jsonPath("$.monthlyEmi").value(439.58))
                 .andExpect(jsonPath("$.monthlyEmi").isNumber());
     }
 

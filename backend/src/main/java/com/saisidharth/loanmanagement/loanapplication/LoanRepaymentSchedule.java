@@ -7,5 +7,6 @@ public record LoanRepaymentSchedule(
         UUID loanId,
         BigDecimal principal,
         Integer termMonths,
+        BigDecimal annualInterestRate,
         BigDecimal monthlyEmi) {
 }

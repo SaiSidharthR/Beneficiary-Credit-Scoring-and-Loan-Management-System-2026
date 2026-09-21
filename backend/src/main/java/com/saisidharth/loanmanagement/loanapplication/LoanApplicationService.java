@@ -28,6 +28,7 @@ public class LoanApplicationService {
                 request.amount(),
                 request.termMonths(),
                 request.purpose().trim(),
+                interestRateOrZero(request),
                 LoanApplicationStatus.PENDING,
                 null,
                 now,
@@ -51,6 +52,7 @@ public class LoanApplicationService {
                 request.amount(),
                 request.termMonths(),
                 request.purpose().trim(),
+                interestRateOrZero(request),
                 current.status(),
                 current.reviewNotes(),
                 current.createdAt(),
@@ -69,6 +71,7 @@ public class LoanApplicationService {
                 current.amount(),
                 current.termMonths(),
                 current.purpose(),
+                current.annualInterestRate(),
                 request.status(),
                 request.reviewNotes() == null ? current.reviewNotes() : request.reviewNotes().trim(),
                 current.createdAt(),
@@ -80,8 +83,10 @@ public class LoanApplicationService {
     public LoanRepaymentSchedule createSchedule(UUID id) {
         LoanApplication loan = findById(id);
         BigDecimal principal = loan.amount();
-        BigDecimal monthlyEmi = principal.divide(BigDecimal.valueOf(loan.termMonths()), 2, java.math.RoundingMode.HALF_UP);
-        return new LoanRepaymentSchedule(loan.id(), principal, loan.termMonths(), monthlyEmi);
+        BigDecimal monthlyRate = loan.annualInterestRate()
+            .divide(BigDecimal.valueOf(1200), 12, java.math.RoundingMode.HALF_UP);
+        BigDecimal monthlyEmi = calculateEmi(principal, monthlyRate, loan.termMonths());
+        return new LoanRepaymentSchedule(loan.id(), principal, loan.termMonths(), loan.annualInterestRate(), monthlyEmi);
     }
 
     public LoanRepayment createRepayment(UUID loanId, LoanRepaymentRequest request) {
@@ -118,7 +123,8 @@ public class LoanApplicationService {
 
     private void validate(LoanApplicationRequest request) {
         if (request == null || isBlank(request.beneficiaryId()) || request.amount() == null || request.amount().compareTo(BigDecimal.ZERO) <= 0
-                || request.termMonths() == null || request.termMonths() <= 0 || isBlank(request.purpose())) {
+                || request.termMonths() == null || request.termMonths() <= 0 || isBlank(request.purpose())
+                || request.annualInterestRate() != null && request.annualInterestRate().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("beneficiaryId, amount, termMonths, and purpose are required");
         }
 
@@ -131,5 +137,19 @@ public class LoanApplicationService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private BigDecimal interestRateOrZero(LoanApplicationRequest request) {
+        return request.annualInterestRate() == null ? BigDecimal.ZERO : request.annualInterestRate();
+    }
+
+    private BigDecimal calculateEmi(BigDecimal principal, BigDecimal monthlyRate, int termMonths) {
+        if (monthlyRate.compareTo(BigDecimal.ZERO) == 0) {
+            return principal.divide(BigDecimal.valueOf(termMonths), 2, java.math.RoundingMode.HALF_UP);
+        }
+
+        BigDecimal growthFactor = BigDecimal.ONE.add(monthlyRate).pow(termMonths);
+        return principal.multiply(monthlyRate).multiply(growthFactor)
+                .divide(growthFactor.subtract(BigDecimal.ONE), 2, java.math.RoundingMode.HALF_UP);
     }
 }
