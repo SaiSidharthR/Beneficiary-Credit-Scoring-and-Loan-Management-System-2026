@@ -65,6 +65,10 @@ public class LoanApplicationService {
         }
 
         LoanApplication current = findById(id);
+        if (current.status() != LoanApplicationStatus.PENDING) {
+            throw new IllegalArgumentException("only pending loans can be reviewed");
+        }
+
         LoanApplication updated = new LoanApplication(
                 current.id(),
                 current.beneficiaryId(),
@@ -95,7 +99,18 @@ public class LoanApplicationService {
             throw new IllegalArgumentException("amount, paymentMode, and reference are required");
         }
 
-        findById(loanId);
+        LoanApplication loan = findById(loanId);
+        if (loan.status() != LoanApplicationStatus.APPROVED) {
+            throw new IllegalArgumentException("only approved loans can receive repayments");
+        }
+
+        BigDecimal totalPaid = repaymentRepository.findByLoanId(loanId).stream()
+                .map(LoanRepayment::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (totalPaid.add(request.amount()).compareTo(loan.amount()) > 0) {
+            throw new IllegalArgumentException("repayment exceeds outstanding balance");
+        }
+
         Instant now = Instant.now();
         return repaymentRepository.save(new LoanRepayment(
                 UUID.randomUUID(),

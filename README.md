@@ -59,3 +59,13 @@ Build a production-style loan management workflow covering beneficiary managemen
 ### EMI API
 - `POST /api/loans` and `POST /api/loan-applications` accept optional `annualInterestRate`
 - `GET /api/loans/{id}/schedule` and `GET /api/loan-applications/{id}/schedule` return the calculated `monthlyEmi`
+
+## Day 8 Scope
+- Review pending loan applications by approving or rejecting them with optional review notes
+- Record repayments for approved loans and expose the total paid and outstanding balance
+- Prevent repayments before approval, overpayments, and review changes after a decision
+
+### Repayment API
+- `PATCH /api/loans/{id}/status` and `PATCH /api/loan-applications/{id}/status` review a pending loan
+- `POST /api/loans/{id}/repayments` and `POST /api/loan-applications/{id}/repayments` record a repayment
+- `GET /api/loans/{id}/summary` and `GET /api/loan-applications/{id}/summary` return repayment totals

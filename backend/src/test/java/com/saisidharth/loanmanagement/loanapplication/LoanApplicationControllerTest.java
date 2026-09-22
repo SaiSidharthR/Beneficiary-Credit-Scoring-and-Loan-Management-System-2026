@@ -131,6 +131,60 @@ class LoanApplicationControllerTest {
     }
 
     @Test
+    void rejectsRepaymentForPendingLoanAndOverpayment() throws Exception {
+        String response = mockMvc.perform(post("/api/loans")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":5000.00,\"termMonths\":12,\"purpose\":\"Education\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String id = response.replaceAll(".*\\\"id\\\":\\\"([^\\\"]+)\\\".*", "$1");
+
+        mockMvc.perform(post("/api/loans/{id}/repayments", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":100.00,\"paymentMode\":\"CASH\",\"reference\":\"REF-2001\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("only approved loans can receive repayments"));
+
+        mockMvc.perform(patch("/api/loans/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/loans/{id}/repayments", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":5000.01,\"paymentMode\":\"CASH\",\"reference\":\"REF-2002\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("repayment exceeds outstanding balance"));
+    }
+
+    @Test
+    void rejectsReviewOfAlreadyReviewedLoan() throws Exception {
+        String response = mockMvc.perform(post("/api/loans")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":2500.00,\"termMonths\":6,\"purpose\":\"Medical\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String id = response.replaceAll(".*\\\"id\\\":\\\"([^\\\"]+)\\\".*", "$1");
+
+        mockMvc.perform(patch("/api/loans/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REJECTED\",\"reviewNotes\":\"Insufficient documentation\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/loans/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("only pending loans can be reviewed"));
+    }
+
+    @Test
     void rejectsInvalidLoanApplication() throws Exception {
         mockMvc.perform(post("/api/loan-applications")
                         .contentType(MediaType.APPLICATION_JSON)
