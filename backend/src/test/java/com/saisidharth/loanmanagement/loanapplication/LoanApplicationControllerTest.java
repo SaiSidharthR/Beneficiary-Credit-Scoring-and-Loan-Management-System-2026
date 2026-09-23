@@ -185,6 +185,47 @@ class LoanApplicationControllerTest {
     }
 
     @Test
+    void returnsPortfolioSummaryAndAuditTrail() throws Exception {
+        String beneficiaryId = UUID.randomUUID().toString();
+
+        mockMvc.perform(post("/api/beneficiaries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Asha Rao\",\"email\":\"asha@example.com\",\"phone\":\"9988776644\"}"))
+                .andExpect(status().isCreated());
+
+        String loanResponse = mockMvc.perform(post("/api/loans")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"beneficiaryId\":\"" + beneficiaryId + "\",\"amount\":4500.00,\"termMonths\":9,\"purpose\":\"Home Repair\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String id = loanResponse.replaceAll(".*\\\"id\\\":\\\"([^\\\"]+)\\\".*", "$1");
+
+        mockMvc.perform(patch("/api/loans/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\",\"reviewNotes\":\"Approved for processing\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/loans/{id}/repayments", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":1000.00,\"paymentMode\":\"UPI\",\"reference\":\"REF-9001\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/reports/portfolio"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalApplications").exists())
+                .andExpect(jsonPath("$.approvedApplications").exists())
+                .andExpect(jsonPath("$.outstandingBalance").exists());
+
+        mockMvc.perform(get("/api/loans/{id}/audit-log", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].eventType").exists())
+                .andExpect(jsonPath("$[0].message").exists());
+    }
+
+    @Test
     void rejectsInvalidLoanApplication() throws Exception {
         mockMvc.perform(post("/api/loan-applications")
                         .contentType(MediaType.APPLICATION_JSON)

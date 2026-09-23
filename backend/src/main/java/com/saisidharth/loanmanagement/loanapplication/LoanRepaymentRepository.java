@@ -25,4 +25,10 @@ public class LoanRepaymentRepository {
                 .sorted(Comparator.comparing(LoanRepayment::paidAt).reversed())
                 .collect(Collectors.toList());
     }
+
+    public List<LoanRepayment> findAll() {
+        return repayments.values().stream()
+                .sorted(Comparator.comparing(LoanRepayment::paidAt).reversed())
+                .collect(Collectors.toList());
+    }
 }

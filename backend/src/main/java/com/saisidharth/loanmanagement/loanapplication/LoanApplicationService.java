@@ -12,17 +12,21 @@ public class LoanApplicationService {
 
     private final LoanApplicationRepository repository;
     private final LoanRepaymentRepository repaymentRepository;
+    private final LoanAuditRepository auditRepository;
 
-    public LoanApplicationService(LoanApplicationRepository repository, LoanRepaymentRepository repaymentRepository) {
+    public LoanApplicationService(LoanApplicationRepository repository,
+            LoanRepaymentRepository repaymentRepository,
+            LoanAuditRepository auditRepository) {
         this.repository = repository;
         this.repaymentRepository = repaymentRepository;
+        this.auditRepository = auditRepository;
     }
 
     public LoanApplication create(LoanApplicationRequest request) {
         validate(request);
 
         Instant now = Instant.now();
-        return repository.save(new LoanApplication(
+        LoanApplication loan = new LoanApplication(
                 UUID.randomUUID(),
                 UUID.fromString(request.beneficiaryId()),
                 request.amount(),
@@ -32,7 +36,10 @@ public class LoanApplicationService {
                 LoanApplicationStatus.PENDING,
                 null,
                 now,
-                now));
+                now);
+        repository.save(loan);
+        auditRepository.record(loan.id(), "CREATED", "Loan application created for beneficiary " + loan.beneficiaryId());
+        return loan;
     }
 
     public List<LoanApplication> findAll() {
@@ -81,7 +88,9 @@ public class LoanApplicationService {
                 current.createdAt(),
                 Instant.now());
 
-        return repository.save(updated);
+        repository.save(updated);
+        auditRepository.record(updated.id(), "STATUS_UPDATED", "Loan marked as " + updated.status() + " with review notes: " + (updated.reviewNotes() == null ? "none" : updated.reviewNotes()));
+        return updated;
     }
 
     public LoanRepaymentSchedule createSchedule(UUID id) {
@@ -112,13 +121,15 @@ public class LoanApplicationService {
         }
 
         Instant now = Instant.now();
-        return repaymentRepository.save(new LoanRepayment(
+        LoanRepayment repayment = repaymentRepository.save(new LoanRepayment(
                 UUID.randomUUID(),
                 loanId,
                 request.amount(),
                 request.paymentMode().trim(),
                 request.reference().trim(),
                 now));
+        auditRepository.record(loanId, "REPAYMENT", "Recorded repayment of " + repayment.amount() + " via " + repayment.paymentMode());
+        return repayment;
     }
 
     public LoanRepaymentSummary findSummary(UUID loanId) {
@@ -128,6 +139,37 @@ public class LoanApplicationService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new LoanRepaymentSummary(loan.id(), totalPaid, loan.amount().subtract(totalPaid));
+    }
+
+    public LoanPortfolioSummary getPortfolioSummary() {
+        List<LoanApplication> loans = repository.findAll();
+        long totalApplications = loans.size();
+        long approvedApplications = loans.stream().filter(loan -> loan.status() == LoanApplicationStatus.APPROVED).count();
+        long pendingApplications = loans.stream().filter(loan -> loan.status() == LoanApplicationStatus.PENDING).count();
+        long rejectedApplications = loans.stream().filter(loan -> loan.status() == LoanApplicationStatus.REJECTED).count();
+
+        BigDecimal totalDisbursed = loans.stream()
+                .filter(loan -> loan.status() == LoanApplicationStatus.APPROVED)
+                .map(LoanApplication::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPaid = repaymentRepository.findAll().stream()
+                .map(LoanRepayment::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal outstandingBalance = totalDisbursed.subtract(totalPaid);
+        return new LoanPortfolioSummary(
+                totalApplications,
+                approvedApplications,
+                pendingApplications,
+                rejectedApplications,
+                totalDisbursed,
+                totalPaid,
+                outstandingBalance);
+    }
+
+    public List<LoanAuditEvent> getAuditLog(UUID loanId) {
+        return auditRepository.findByLoanId(loanId);
     }
 
     public void delete(UUID id) {

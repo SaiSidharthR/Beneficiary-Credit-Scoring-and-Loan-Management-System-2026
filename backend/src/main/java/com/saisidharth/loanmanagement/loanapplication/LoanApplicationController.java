@@ -65,6 +65,16 @@ public class LoanApplicationController {
         return service.findSummary(id);
     }
 
+    @GetMapping("/reports/portfolio")
+    public LoanPortfolioSummary getPortfolioSummary() {
+        return service.getPortfolioSummary();
+    }
+
+    @GetMapping({"/loans/{id}/audit-log", "/loan-applications/{id}/audit-log"})
+    public List<LoanAuditEvent> getAuditLog(@PathVariable UUID id) {
+        return service.getAuditLog(id);
+    }
+
     @DeleteMapping({"/loans/{id}", "/loan-applications/{id}"})
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         service.delete(id);
