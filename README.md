@@ -69,3 +69,21 @@ Build a production-style loan management workflow covering beneficiary managemen
 - `PATCH /api/loans/{id}/status` and `PATCH /api/loan-applications/{id}/status` review a pending loan
 - `POST /api/loans/{id}/repayments` and `POST /api/loan-applications/{id}/repayments` record a repayment
 - `GET /api/loans/{id}/summary` and `GET /api/loan-applications/{id}/summary` return repayment totals
+
+## Day 10 Scope
+- Filter loan applications by status, beneficiary, and purpose
+- Keep results ordered from newest to oldest
+- Reject invalid status and beneficiary filters with clear 400 responses
+
+### Loan Search API
+- `GET /api/loans?status=APPROVED&beneficiaryId={id}&purpose=education` filters loans
+- The same query parameters are available on `/api/loan-applications`
+
+## Day 11 Scope
+- Paginate filtered loan results with zero-based pages
+- Return at most 50 loans by default and preserve newest-first ordering
+- Reject negative pages and non-positive page sizes
+
+### Paginated Loan Search API
+- `GET /api/loans?page=0&size=20` returns the first page of loans
+- Pagination works with the Day 10 `status`, `beneficiaryId`, and `purpose` filters

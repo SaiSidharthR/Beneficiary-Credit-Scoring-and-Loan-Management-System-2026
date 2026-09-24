@@ -25,6 +25,15 @@ public class LoanApplicationRepository {
                 .toList();
     }
 
+    public List<LoanApplication> findAll(LoanApplicationStatus status, UUID beneficiaryId, String purpose) {
+        return loanApplications.values().stream()
+                .filter(loan -> status == null || loan.status() == status)
+                .filter(loan -> beneficiaryId == null || loan.beneficiaryId().equals(beneficiaryId))
+                .filter(loan -> purpose == null || loan.purpose().toLowerCase().contains(purpose.toLowerCase()))
+                .sorted(Comparator.comparing(LoanApplication::createdAt).reversed())
+                .toList();
+    }
+
     public Optional<LoanApplication> findById(UUID id) {
         return Optional.ofNullable(loanApplications.get(id));
     }

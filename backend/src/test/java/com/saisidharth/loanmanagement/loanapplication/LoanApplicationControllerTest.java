@@ -226,6 +226,68 @@ class LoanApplicationControllerTest {
     }
 
     @Test
+    void filtersLoansByStatusAndPurpose() throws Exception {
+        mockMvc.perform(post("/api/loans")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":2000.00,\"termMonths\":6,\"purpose\":\"Business Equipment\"}"))
+                .andExpect(status().isCreated());
+
+        String approvedResponse = mockMvc.perform(post("/api/loans")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":3500.00,\"termMonths\":12,\"purpose\":\"Day Ten Education Fees\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String approvedId = approvedResponse.replaceAll(".*\\\"id\\\":\\\"([^\\\"]+)\\\".*", "$1");
+
+        mockMvc.perform(patch("/api/loans/{id}/status", approvedId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/loans")
+                        .param("status", "approved")
+                        .param("purpose", "day ten education"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(approvedId))
+                .andExpect(jsonPath("$[0].status").value("APPROVED"))
+                .andExpect(jsonPath("$[1]").doesNotExist());
+    }
+
+    @Test
+    void rejectsInvalidLoanFilters() throws Exception {
+        mockMvc.perform(get("/api/loans").param("status", "in-review"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("status must be PENDING, APPROVED, or REJECTED"));
+    }
+
+        @Test
+        void paginatesFilteredLoans() throws Exception {
+                for (int index = 0; index < 3; index++) {
+                        mockMvc.perform(post("/api/loans")
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":1000.00,\"termMonths\":6,\"purpose\":\"Day Eleven Pagination\"}"))
+                                        .andExpect(status().isCreated());
+                }
+
+                mockMvc.perform(get("/api/loans")
+                                                .param("purpose", "day eleven pagination")
+                                                .param("page", "1")
+                                                .param("size", "2"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].purpose").value("Day Eleven Pagination"))
+                                .andExpect(jsonPath("$[1]").doesNotExist());
+        }
+
+        @Test
+        void rejectsInvalidPagination() throws Exception {
+                mockMvc.perform(get("/api/loans").param("page", "-1"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("page must be zero or greater and size must be greater than zero"));
+        }
+
+    @Test
     void rejectsInvalidLoanApplication() throws Exception {
         mockMvc.perform(post("/api/loan-applications")
                         .contentType(MediaType.APPLICATION_JSON)

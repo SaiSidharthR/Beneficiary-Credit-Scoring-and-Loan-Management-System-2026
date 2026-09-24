@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,8 +32,13 @@ public class LoanApplicationController {
     }
 
     @GetMapping({"/loans", "/loan-applications"})
-    public List<LoanApplication> findAll() {
-        return service.findAll();
+    public List<LoanApplication> findAll(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String beneficiaryId,
+            @RequestParam(required = false) String purpose,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return service.findAll(status, beneficiaryId, purpose, page, size);
     }
 
     @GetMapping({"/loans/{id}", "/loan-applications/{id}"})

@@ -46,6 +46,29 @@ public class LoanApplicationService {
         return repository.findAll();
     }
 
+    public List<LoanApplication> findAll(String status, String beneficiaryId, String purpose) {
+        return findAll(status, beneficiaryId, purpose, 0, Integer.MAX_VALUE);
+    }
+
+    public List<LoanApplication> findAll(String status, String beneficiaryId, String purpose, int page, int size) {
+        if (page < 0 || size <= 0) {
+            throw new IllegalArgumentException("page must be zero or greater and size must be greater than zero");
+        }
+
+        LoanApplicationStatus parsedStatus = parseStatus(status);
+        UUID parsedBeneficiaryId = parseBeneficiaryId(beneficiaryId);
+        String normalizedPurpose = purpose == null || purpose.isBlank() ? null : purpose.trim();
+        List<LoanApplication> loans = repository.findAll(parsedStatus, parsedBeneficiaryId, normalizedPurpose);
+        long offset = (long) page * size;
+        if (offset >= loans.size()) {
+            return List.of();
+        }
+
+        int fromIndex = (int) offset;
+        int toIndex = (int) Math.min(offset + size, loans.size());
+        return loans.subList(fromIndex, toIndex);
+    }
+
     public LoanApplication findById(UUID id) {
         return repository.findById(id).orElseThrow(() -> new LoanApplicationNotFoundException(id));
     }
@@ -198,6 +221,30 @@ public class LoanApplicationService {
 
     private BigDecimal interestRateOrZero(LoanApplicationRequest request) {
         return request.annualInterestRate() == null ? BigDecimal.ZERO : request.annualInterestRate();
+    }
+
+    private LoanApplicationStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return LoanApplicationStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("status must be PENDING, APPROVED, or REJECTED");
+        }
+    }
+
+    private UUID parseBeneficiaryId(String beneficiaryId) {
+        if (beneficiaryId == null || beneficiaryId.isBlank()) {
+            return null;
+        }
+
+        try {
+            return UUID.fromString(beneficiaryId.trim());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("beneficiaryId must be a valid UUID");
+        }
     }
 
     private BigDecimal calculateEmi(BigDecimal principal, BigDecimal monthlyRate, int termMonths) {
