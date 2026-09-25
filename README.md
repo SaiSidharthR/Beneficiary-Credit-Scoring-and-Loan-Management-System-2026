@@ -97,3 +97,14 @@ Build a production-style loan management workflow covering beneficiary managemen
 - Run the backend with `mvn spring-boot:run` from `backend`
 - Run the frontend with `npm run dev` from `frontend`
 - Open `http://localhost:5173/` to view the dashboard
+
+## Day 13 Scope
+- Create beneficiaries from the React dashboard
+- Submit loan applications with beneficiary, amount, term, purpose, and interest rate
+- Approve or reject pending loan applications from the recent-loans table
+- Refresh portfolio totals after new applications and review decisions
+
+## Day 14 Scope
+- Calculate a beneficiary credit score from the dashboard
+- Capture monthly income, monthly debt, on-time payments, and missed payments
+- Display the score rating and eligibility decision returned by the backend
