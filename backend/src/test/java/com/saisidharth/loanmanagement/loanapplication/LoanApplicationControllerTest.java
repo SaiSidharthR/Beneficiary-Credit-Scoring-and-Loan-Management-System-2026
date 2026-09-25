@@ -281,6 +281,23 @@ class LoanApplicationControllerTest {
         }
 
         @Test
+        void capsPageSizeAtFifty() throws Exception {
+                for (int index = 0; index < 60; index++) {
+                        mockMvc.perform(post("/api/loans")
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .content("{\"beneficiaryId\":\"" + UUID.randomUUID() + "\",\"amount\":1000.00,\"termMonths\":6,\"purpose\":\"Day Twelve Pagination\"}"))
+                                        .andExpect(status().isCreated());
+                }
+
+                mockMvc.perform(get("/api/loans")
+                                                .param("purpose", "day twelve pagination")
+                                                .param("page", "0")
+                                                .param("size", "100"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[50]").doesNotExist());
+        }
+
+        @Test
         void rejectsInvalidPagination() throws Exception {
                 mockMvc.perform(get("/api/loans").param("page", "-1"))
                                 .andExpect(status().isBadRequest())

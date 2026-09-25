@@ -87,3 +87,13 @@ Build a production-style loan management workflow covering beneficiary managemen
 ### Paginated Loan Search API
 - `GET /api/loans?page=0&size=20` returns the first page of loans
 - Pagination works with the Day 10 `status`, `beneficiaryId`, and `purpose` filters
+
+## Day 12 Scope
+- Cap loan search pages at a maximum of 50 results even when a larger size is requested
+- Add a React dashboard that displays portfolio totals, recent loan applications, and beneficiaries
+- Connect the Vite frontend to the Spring Boot API through a development proxy
+
+### Dashboard
+- Run the backend with `mvn spring-boot:run` from `backend`
+- Run the frontend with `npm run dev` from `frontend`
+- Open `http://localhost:5173/` to view the dashboard

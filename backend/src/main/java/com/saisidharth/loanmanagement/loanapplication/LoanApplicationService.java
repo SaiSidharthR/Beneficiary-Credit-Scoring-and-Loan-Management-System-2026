@@ -55,6 +55,8 @@ public class LoanApplicationService {
             throw new IllegalArgumentException("page must be zero or greater and size must be greater than zero");
         }
 
+        size = Math.min(size, 50);
+
         LoanApplicationStatus parsedStatus = parseStatus(status);
         UUID parsedBeneficiaryId = parseBeneficiaryId(beneficiaryId);
         String normalizedPurpose = purpose == null || purpose.isBlank() ? null : purpose.trim();
